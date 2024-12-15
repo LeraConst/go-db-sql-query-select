@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"database/sql"
 
 	_ "modernc.org/sqlite"
 )
@@ -21,8 +22,44 @@ func (s Sale) String() string {
 func selectSales(client int) ([]Sale, error) {
 	var sales []Sale
 
-	// напишите код здесь
+	 // Открываем соединение с базой данных SQLite
+	 db, err := sql.Open("sqlite", "demo.db")
+	 if err != nil {
+		 return nil, err
+	 }
+	 defer db.Close() // Закрываем соединение с базой данных по завершении работы
 
+
+	 // Выполняем SQL-запрос для получения данных
+	 row, err := db.Query("SELECT product, volume, date FROM sales WHERE client = :client", sql.Named("client", client))
+	 if err != nil {
+		return nil, err
+	 }
+	 defer row.Close() // Закрываем результат запроса по завершении работы
+
+
+	  // Проходим по всем строкам результата запроса
+	  for row.Next() {
+		var product, volume int 
+		var date string
+        // Считываем данные из текущей строки в поля структуры Product
+        err := row.Scan(&product, &volume, &date)
+        if err != nil {
+            return nil, err
+        }
+		// Создаём объект Sale и добавляем его в срез
+		sale := Sale{
+			Product: product,
+			Volume:  volume,
+			Date:    date,
+		}
+		sales = append(sales, sale)
+	}
+
+	// Проверяем наличие ошибок при итерации
+	if err := row.Err(); err != nil {
+		return nil, err
+    }
 	return sales, nil
 }
 
